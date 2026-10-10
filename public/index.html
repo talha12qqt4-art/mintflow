@@ -1,150 +1,682 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MintFlow - Reward Hub</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #121212; color: #fff; margin: 0; padding: 15px; }
-    .card { background: #1e1e1e; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #333; }
-    h2, h3 { margin-top: 0; color: #0088cc; }
-    .btn { width: 100%; background: #0088cc; color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 8px; font-size: 16px; }
-    .btn-gold { background: #f39c12; }
-    .btn-vip { background: #e74c3c; }
-    .btn:disabled { background: #555; }
-    input, select { width: 100%; padding: 10px; margin: 8px 0; border-radius: 6px; border: 1px solid #444; background: #222; color: #fff; box-sizing: border-box; }
-    .desc { font-size: 13px; color: #bbb; line-height: 1.4; margin-bottom: 8px; background: #2a2a2a; padding: 8px; border-radius: 6px; }
-  </style>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>MintFlow Reward Hub</title>
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Adsgram SDK -->
+    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+    <!-- Monetag SDK -->
+    <script src="//libtl.com/sdk.js" data-zone="11722515" data-sdk="show_11722515"></script>
+    <!-- Remix Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap');
+        *{font-family:'Outfit',sans-serif;box-sizing:border-box}
+        body{margin:0;background:#0b1120;color:#fff;padding-bottom:90px;user-select:none}
+        .header{display:flex;align-items:center;justify-content:space-between;padding:16px;background:#121a2e;border-bottom:1px solid #1e293b}
+        .user-info-wrapper{display:flex;align-items:center;gap:12px}
+        .avatar{width:56px;height:56px;border-radius:50%;border:2px solid #38bdf8;object-fit:cover;background:#1e293b}
+        .user-role-badge{font-size:11px;background:#0284c7;color:#fff;padding:2px 8px;border-radius:10px;margin-top:3px;display:inline-block;font-weight:600}
+        .stats{background:#151e32;border:1px solid #1e293b;margin:15px;border-radius:18px;padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+        .stat span{font-size:13px;opacity:.6}.stat b{font-size:22px;color:#38bdf8;display:block;margin-top:4px}
+        .card{background:#151e32;border:1px solid #1e293b;margin:15px;border-radius:18px;padding:16px}
+        .refer-input{width:100%;background:#0b1120;border:1px solid #334155;border-radius:12px;padding:12px;color:#fff;margin:10px 0;outline:none}
+        .btn-blue{background:#38bdf8;color:#0b1120;border:none;width:100%;padding:13px;border-radius:12px;font-weight:700;margin:6px 0;cursor:pointer;transition:0.2s}
+        .btn-blue:active{opacity:0.8}
+        .btn-green{background:#22c55e;color:#000;border:none;width:100%;padding:13px;border-radius:12px;font-weight:700;margin:6px 0;cursor:pointer;transition:0.2s}
+        .btn-green:active{opacity:0.8}
+        .btn-purple{background:#8b5cf6;color:#fff;border:none;width:100%;padding:13px;border-radius:12px;font-weight:700;margin:6px 0;cursor:pointer}
+        .page{display:none}.page.active{display:block}
+        .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#121a2e;border-top:1px solid #1e293b;display:flex;justify-content:space-around;padding:10px 0;z-index:90}
+        .nav-item{text-align:center;color:#94a3b8;font-size:12px;cursor:pointer;flex:1}.nav-item.active{color:#38bdf8}.nav-item i{font-size:22px;display:block;margin-bottom:2px}
+        .task-card{background:#1e293b;border-radius:14px;padding:14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+        .task-card button{background:#22c55e;color:#000;border:none;padding:8px 16px;border-radius:20px;font-weight:700;cursor:pointer}
+        .task-card button:disabled{background:#64748b;color:#cbd5e1;cursor:not-allowed}
+        .history-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #1e293b;font-size:14px}
+        .status-badge{font-size:11px;padding:3px 8px;border-radius:10px;font-weight:bold}
+        .status-pending{background:#f59e0b;color:#000}
+        .status-completed{background:#22c55e;color:#000}
+        .status-rejected{background:#ef4444;color:#fff}
+        
+        /* Copy Row */
+        .copy-row { display: flex; gap: 8px; align-items: center; }
+
+        /* Toast Notification */
+        #toast {
+            visibility: hidden; min-width: 280px; background-color: #22c55e; color: #000;
+            text-align: center; border-radius: 12px; padding: 12px 16px; position: fixed;
+            z-index: 1000; left: 50%; top: 30px; transform: translateX(-50%); font-weight: bold;
+        }
+        #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+
+        /* Custom Dark Modal Alert & Payment Modal */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px); z-index: 9999;
+            align-items: center; justify-content: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-box {
+            background: #121a2e; border: 1px solid #1e293b; border-radius: 18px;
+            width: 90%; max-width: 340px; padding: 20px; text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); animation: popIn 0.3s ease;
+        }
+        .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 10px; color: #38bdf8; }
+        .modal-msg { font-size: 14px; opacity: 0.85; margin-bottom: 18px; line-height: 1.4; color: #fff; }
+        .modal-btn { background: #38bdf8; color: #0b1120; border: none; width: 100%; padding: 11px; border-radius: 10px; font-weight: 700; cursor: pointer; }
+        
+        @keyframes fadein { from {top: 0; opacity: 0;} to {top: 30px; opacity: 1;} }
+        @keyframes fadeout { from {top: 30px; opacity: 1;} to {top: 0; opacity: 0;} }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    </style>
 </head>
 <body>
 
-  <h2>𝗠𝗜𝗡𝗧𝗙𝗟𝗢𝗪 - 𝗥𝗘𝗪𝗔𝗥𝗗 𝗛𝗨𝗕</h2>
+    <div id="toast">Notification</div>
 
-  <div class="card">
-    <h3>👤 প্রোফাইল তথ্য</h3>
-    <p>ব্যালেন্স: <b><span id="balance">0</span> BDT</b></p>
-    <p>বর্তমান প্যাকেজ: <b><span id="package">Normal</span></b></p>
-    <p>মোট রেফার: <b><span id="referrals">0</span></b></p>
-    <p>আজকের অ্যাড দেখা: <b><span id="adsWatched">0</span></b></p>
-  </div>
-
-  <div class="card">
-    <h3>📺 অ্যাড দেখে ইনকাম করুন</h3>
-    <button class="btn" onclick="watchAd()">অ্যাড দেখুন</button>
-  </div>
-
-  <div class="card">
-    <h3>📦 আপগ্রেড প্যাকেজ</h3>
-    
-    <!-- Gold Package -->
-    <div class="desc">
-      <b>🟡 Gold Package Details:</b><br>
-      • দৈনিক অ্যাড লিমিট: ২৫০ টি<br>
-      • প্রতি অ্যাড ইনকাম: ২.৫ টাকা<br>
-      • মিনিমাম উইথড্র: ৯৬০ টাকা<br>
-      • প্রয়োজনীয় রেফার: অন্তত ৩ টি
+    <!-- CUSTOM DARK MODAL ALERT -->
+    <div id="darkModal" class="modal-overlay">
+        <div class="modal-box">
+            <div id="modalTitle" class="modal-title">MintFlow Hub</div>
+            <div id="modalMsg" class="modal-msg">Message</div>
+            <button class="modal-btn" onclick="closeDarkAlert()">ঠিক আছে</button>
+        </div>
     </div>
-    <button class="btn btn-gold" onclick="buyPackage('Gold')">Gold Package কিনুন</button>
 
-    <br><br>
+    <!-- PACKAGE PAYMENT MODAL -->
+    <div id="payModal" class="modal-overlay">
+        <div class="modal-box" style="text-align: left;">
+            <div class="modal-title" id="payModalTitle" style="text-align: center;">প্যাকেজ পেমেন্ট</div>
+            <p style="font-size: 13px; opacity: 0.8; margin-bottom: 8px;">নিচের বিকাশ বা নগদ নম্বরে টাকা সেন্ড করুন:</p>
+            <div class="copy-row" style="margin-bottom: 12px;">
+                <input type="text" id="adminPayNumber" class="refer-input" readonly value="01700000000" style="margin:0; font-weight:bold; color:#38bdf8; text-align:center;"/>
+                <button class="btn-blue" style="width: 80px; margin:0; padding:12px;" onclick="copyAdminNumber()">কপি</button>
+            </div>
+            <label style="font-size: 13px; font-weight: 600;">যে নম্বর থেকে টাকা পাঠিয়েছেন:</label>
+            <input type="text" id="senderNumber" class="refer-input" placeholder="যেমন: 017xxxxxxxx" maxlength="11"/>
+            
+            <label style="font-size: 13px; font-weight: 600;">ট্রানজেকশন আইডি (TrxID):</label>
+            <input type="text" id="trxIdInput" class="refer-input" placeholder="যেমন: 9N7X..."/>
 
-    <!-- VIP Package -->
-    <div class="desc">
-      <b>🔴 VIP Package Details:</b><br>
-      • দৈনিক অ্যাড লিমিট: ২০০ টি<br>
-      • প্রতি অ্যাড ইনকাম: ৫.০ টাকা<br>
-      • মিনিমাম উইথড্র: ১২০০ টাকা<br>
-      • প্রয়োজনীয় রেফার: অন্তত ১ টি
+            <button class="btn-green" style="margin-top: 10px;" onclick="submitPackageOrder()">জমা দিন</button>
+            <button class="btn-blue" style="background:#ef4444; color:#fff; margin-top:6px;" onclick="closePayModal()">বাতিল</button>
+        </div>
     </div>
-    <button class="btn btn-vip" onclick="buyPackage('VIP')">VIP Package কিনুন</button>
-  </div>
 
-  <div class="card">
-    <h3>💸 উইথড্র করুন</h3>
-    <input type="number" id="withdrawAmount" placeholder="উইথড্র পরিমাণ (BDT)">
-    <select id="withdrawMethod">
-      <option value="bKash">bKash</option>
-      <option value="Nagad">Nagad</option>
-      <option value="Rocket">Rocket</option>
-    </select>
-    <input type="text" id="accountNumber" placeholder="একাউন্ট নম্বর">
-    <button class="btn" onclick="requestWithdraw()">উইথড্র রিকোয়েস্ট পাঠান</button>
-  </div>
+    <!-- HEADER -->
+    <div class="header">
+        <div class="user-info-wrapper">
+            <img id="userPhoto" class="avatar" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Avatar"/>
+            <div>
+                <b id="userName" style="font-size:16px">Telegram User</b><br/>
+                <span id="userRoleBadge" class="user-role-badge">Normal User</span>
+            </div>
+        </div>
+        <div style="text-align:right;">
+            <span style="font-size:11px; opacity:0.6;">Balance</span><br>
+            <span style="color:#38bdf8; font-weight:700; font-size:18px"><span id="headerBalance">0</span> ৳</span>
+        </div>
+    </div>
 
-  <div class="card">
-    <h3>🔗 রেফারেল লিংক</h3>
-    <p class="desc" id="refLink">লিংক লোড হচ্ছে...</p>
-  </div>
+    <!-- HOME PAGE -->
+    <div id="homePage" class="page active">
+        <div class="stats">
+            <div class="stat"><span>Main Balance</span><b id="points">0</b></div>
+            <div class="stat"><span>Total Refer</span><b id="refCount">0</b></div>
+            <div class="stat"><span>Ads Watched</span><b id="adsWatched">0</b></div>
+            <div class="stat"><span>Today Earn</span><b id="todayEarn">0</b></div>
+        </div> 
 
-  <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand();
+        <div class="card">
+            <div style="font-weight:700; margin-bottom: 8px;"><i class="ri-share-fill"></i> রেফার করে ইনকাম করুন</div>
+            <p style="font-size: 12px; opacity: 0.7; margin: 0 0 8px 0;">আপনার লিংকে কেউ জয়েন করলে ১০ টাকা এবং আপনি পাবেন ২০ টাকা বোনাস!</p>
+            <input id="referLink" class="refer-input" readonly="readonly" value="Loading..."/> 
+            <button class="btn-blue" onclick="copyRefer()"><i class="ri-file-copy-fill"></i> কপি রেফার লিংক</button> 
+            <button class="btn-green" onclick="shareRefer()"><i class="ri-send-plane-fill"></i> টেলিগ্রামে শেয়ার করুন</button> 
+        </div>
 
-    const userId = tg.initDataUnsafe?.user?.id || "8151857152"; // Fallback for test
+        <!-- VIP PACKAGES -->
+        <div class="card">
+            <div style="font-weight:700; margin-bottom:12px;"><i class="ri-vip-crown-fill" style="color:#f59e0b"></i> ভিআইপি প্যাকেজ কিনুন</div>
+            
+            <div style="background:#1e293b; padding:12px; border-radius:12px; margin-bottom:10px;">
+                <b>Premium Package</b>
+                <p style="font-size:13px; opacity:0.7; margin:4px 0 10px 0;">মূল্য: ১২০ টাকা</p>
+                <button class="btn-purple" onclick="openPayModal('Premium Package', 120)">কিনুন</button>
+            </div>
 
-    async function loadUserData() {
-      const res = await fetch(`/api/user/${userId}`);
-      const data = await res.json();
-      
-      document.getElementById('balance').innerText = data.balance;
-      document.getElementById('package').innerText = data.package;
-      document.getElementById('referrals').innerText = data.referralsCount;
-      document.getElementById('adsWatched').innerText = data.dailyAdsWatched;
-      document.getElementById('refLink').innerText = `https://t.me/YOUR_BOT_USERNAME?start=${userId}`;
-    }
+            <div style="background:#1e293b; padding:12px; border-radius:12px;">
+                <b>Golden Package</b>
+                <p style="font-size:13px; opacity:0.7; margin:4px 0 10px 0;">মূল্য: ২০৫ টাকা</p>
+                <button class="btn-purple" onclick="openPayModal('Golden Package', 205)">কিনুন</button>
+            </div>
+        </div>
 
-    async function watchAd() {
-      const res = await fetch('/api/watch-ad', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telegramId: userId.toString() })
-      });
-      const data = await res.json();
-      if (data.error) alert(data.error);
-      else {
-        alert('অ্যাড দেখা সফল হয়েছে!');
-        loadUserData();
-      }
-    }
+        <div class="card"> 
+            <div style="font-weight:700"><i class="ri-history-line"></i> সাম্প্রতিক এক্টিভিটি</div> 
+            <div id="history" style="margin-top:10px; font-size:13px; opacity:0.7;">কোনো হিস্ট্রি নেই</div> 
+        </div> 
+    </div> 
 
-    async function buyPackage(pkg) {
-      const res = await fetch('/api/buy-package', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telegramId: userId.toString(), packageType: pkg })
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert(`${pkg} প্যাকেজ সফলভাবে চালু করা হয়েছে!`);
-        loadUserData();
-      }
-    }
+    <!-- TASK PAGE --> 
+    <div id="taskPage" class="page"> 
+        <div class="card" style="text-align:center"> 
+            <b style="font-size:18px">Watch Ads &amp; Earn</b> 
+            <p style="opacity:.6;font-size:13px;margin:8px 0">প্রতিটি অ্যাড দেখার জন্য ১ টাকা পাবেন</p> 
+            <button class="btn-blue" style="font-size:16px;padding:14px" onclick="watchAd()"><i class="ri-play-circle-fill"></i> Watch Ad</button> 
+            <p id="adStatus" style="font-size:12px;opacity:.8;margin-top:8px;color:#38bdf8"></p> 
+        </div> 
 
-    async function requestWithdraw() {
-      const amount = document.getElementById('withdrawAmount').value;
-      const method = document.getElementById('withdrawMethod').value;
-      const accountNumber = document.getElementById('accountNumber').value;
+        <div class="card"> 
+            <b>কমিউনিটি টাস্কস</b> 
+            <div id="taskList" style="margin-top:12px"> 
+                <div class="task-card"> 
+                    <div> 
+                        <b style="font-size:14px">Join Telegram Channel</b><br/> 
+                        <small style="opacity:.6">+5 BDT</small> 
+                    </div> 
+                    <button id="taskBtn_0" onclick="doTask('https://t.me/Mint_Flow01', 5, 0, 'Telegram Channel')">Join</button> 
+                </div> 
+                <div class="task-card"> 
+                    <div> 
+                        <b style="font-size:14px">Join Telegram Group</b><br/> 
+                        <small style="opacity:.6">+2 BDT</small> 
+                    </div> 
+                    <button id="taskBtn_1" onclick="doTask('https://t.me/+4IKrLHSg_RU0MTg1', 2, 1, 'Telegram Group')">Join</button> 
+                </div> 
+            </div> 
+        </div> 
+    </div> 
 
-      const res = await fetch('/api/withdraw', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          telegramId: userId.toString(),
-          amount: parseFloat(amount),
-          method,
-          accountNumber
-        })
-      });
-      const data = await res.json();
-      if (data.error) alert(data.error);
-      else {
-        alert(data.message);
-        loadUserData();
-      }
-    }
+    <!-- WITHDRAW PAGE --> 
+    <div id="withdrawPage" class="page"> 
+        <div class="card"> 
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <b>টাকা উত্তোলন (Withdraw)</b>
+                <i class="ri-settings-3-line" style="font-size:20px; cursor:pointer; color:#38bdf8;" onclick="toggleLanguageSettings()"></i>
+            </div>
+            
+            <label style="font-size:13px;">দেশ সিলেক্ট করুন:</label>
+            <select id="countrySelect" class="refer-input" onchange="onCountryChange()" style="margin-top:4px;">
+                <option value="BD">🇧🇩 বাংলাদেশ (+880)</option>
+                <option value="IN">🇮🇳 ভারত (+91)</option>
+                <option value="PK">🇵🇰 পাকিস্তান (+92)</option>
+            </select>
 
-    loadUserData();
-  </script>
-</body>
+            <label style="font-size:13px;">পেমেন্ট মেথড:</label>
+            <select id="method" class="refer-input" style="margin-top:4px;"> 
+                <option value="Bkash">বিকাশ (Bkash)</option> 
+                <option value="Nagad">নগদ (Nagad)</option> 
+            </select> 
+
+            <label style="font-size:13px;">মোবাইল নম্বর (১০ ডিজিট):</label>
+            <div class="copy-row" style="margin-top:4px;">
+                <span id="countryCodePrefix" style="background:#0b1120; border:1px solid #334155; padding:12px; border-radius:12px; font-weight:bold; color:#38bdf8;">+880</span>
+                <input id="acc" class="refer-input" type="text" placeholder="17XXXXXXXX" maxlength="10" style="margin:0;"/>
+            </div>
+
+            <label style="font-size:13px; margin-top:10px; display:block;">পরিমাণ (ন্যূনতম ৫০ টাকা):</label>
+            <input id="amount" type="number" class="refer-input" placeholder="টাকার পরিমাণ লিখুন" style="margin-top:4px;"/> 
+
+            <button class="btn-blue" onclick="doWithdraw()">উইথড্র রিকোয়েস্ট পাঠান</button> 
+        </div> 
+
+        <div class="card"> 
+            <b>উইথড্র হিস্ট্রি</b> 
+            <div id="wdHistory" style="margin-top:10px; font-size:13px; opacity:0.8;">লোড হচ্ছে...</div> 
+        </div> 
+    </div> 
+
+    <!-- BOTTOM NAVIGATION --> 
+    <div class="bottom-nav"> 
+        <div class="nav-item active" id="nav-home" onclick="switchPage('homePage', this)"> 
+            <i class="ri-home-5-fill"></i>Home 
+        </div> 
+        <div class="nav-item" id="nav-task" onclick="switchPage('taskPage', this)"> 
+            <i class="ri-checkbox-circle-fill"></i>Tasks 
+        </div> 
+        <div class="nav-item" id="nav-withdraw" onclick="switchPage('withdrawPage', this)"> 
+            <i class="ri-wallet-3-fill"></i>Withdraw 
+        </div> 
+    </div> 
+
+    <script> 
+        var SUPABASE_URL = 'https://vczhvanmtxeolhwslqme.supabase.co'; 
+        var SUPABASE_KEY = 'sb_publishable_yCYLBfCsP6N4TK2wh8PaAA__EUIpOYt'; 
+        var supabase = (window.supabase && window.supabase.createClient) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null; 
+        
+        var BOT_USERNAME = 'Min_Flow_Reward_Bot'; 
+        var ADMIN_CHAT_ID = '8022564770'; 
+        var BOT_TOKEN = '8974659392:AAFbcRt9sr6Z7Xu-Parr-2hKmaj64dFClvw'; 
+        var ADSGRAM_BLOCK_ID = '49873'; 
+        
+        var tg = window.Telegram ? window.Telegram.WebApp : null; 
+        if (tg) { 
+            try { 
+                tg.expand(); 
+                tg.ready(); 
+            } catch(e){} 
+        } 
+        
+        var tgUser = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user : {}; 
+        var firstName = tgUser.first_name || ''; 
+        var lastName = tgUser.last_name || ''; 
+        var fullName = (firstName + ' ' + lastName).trim() || 'Telegram User'; 
+        var userId = tgUser.id || 12345678; 
+        var startParam = (tg && tg.initDataUnsafe) ? tg.initDataUnsafe.start_param : null; 
+        
+        document.getElementById('userName').innerText = fullName; 
+        if (tgUser.photo_url) { 
+            document.getElementById('userPhoto').src = tgUser.photo_url; 
+        } else { 
+            document.getElementById('userPhoto').src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(fullName) + '&background=3b82f6&color=fff'; 
+        } 
+        
+        var referLink = 'https://t.me/' + BOT_USERNAME + '?start=' + userId; 
+        document.getElementById('referLink').value = referLink; 
+        
+        var userData = { 
+            points: 0, 
+            ref_count: 0, 
+            adsWatched: 0, 
+            todayEarn: 0, 
+            claimedTasks: [], 
+            role: 'Normal User',
+            is_banned: false 
+        }; 
+        var recentActivities = []; 
+        var selectedPackageName = '';
+        var selectedPackageAmount = 0;
+
+        function showDarkAlert(title, message) { 
+            document.getElementById('modalTitle').innerText = title; 
+            document.getElementById('modalMsg').innerText = message; 
+            document.getElementById('darkModal').classList.add('active'); 
+        } 
+        function closeDarkAlert() { 
+            document.getElementById('darkModal').classList.remove('active'); 
+        } 
+
+        function openPayModal(pkgName, amount) {
+            selectedPackageName = pkgName;
+            selectedPackageAmount = amount;
+            document.getElementById('payModalTitle').innerText = `${pkgName} (${amount}৳)`;
+            document.getElementById('payModal').classList.add('active');
+        }
+
+        function closePayModal() {
+            document.getElementById('payModal').classList.remove('active');
+            document.getElementById('senderNumber').value = '';
+            document.getElementById('trxIdInput').value = '';
+        }
+
+        function copyAdminNumber() {
+            navigator.clipboard.writeText(document.getElementById('adminPayNumber').value);
+            showToast('অ্যাডমিন নম্বর কপি হয়েছে!');
+        }
+
+        async function submitPackageOrder() {
+            var senderNum = document.getElementById('senderNumber').value.trim();
+            var trxId = document.getElementById('trxIdInput').value.trim();
+
+            if (!senderNum || senderNum.length < 11) return showDarkAlert('সতর্কতা', 'সঠিক ১১ ডিজিটের পেমেন্ট নম্বর দিন!');
+            if (!trxId) return showDarkAlert('সতর্কতা', 'ট্রানজেকশন আইডি (TrxID) লিখুন!');
+
+            var reqId = 'PKG' + Date.now();
+            if (supabase) {
+                await supabase.from('withdrawals').insert([{ 
+                    id: reqId, 
+                    user_id: userId, 
+                    method: 'Package (' + selectedPackageName + ')', 
+                    account: senderNum + ' [Trx: ' + trxId + ']', 
+                    amount: selectedPackageAmount, 
+                    status: 'Pending' 
+                }]);
+            }
+
+            var adminMsg = "📦 *নতুন প্যাকেজ ক্রয়ের রিকোয়েস্ট*\n\n🆔 *Req ID:* `" + reqId + "`\n👤 *User:* " + fullName + "\n🆔 *User ID:* `" + userId + "`\n👑 *Package:* " + selectedPackageName + " (" + selectedPackageAmount + " BDT)\n📱 *Sender No:* `" + senderNum + "`\n🔖 *TrxID:* `" + trxId + "`\n📌 *Status:* Pending";
+            
+            var keyboard = {
+                inline_keyboard: [
+                    [
+                        { text: "✅ Approve", callback_data: "pkgapp_" + reqId + "_" + userId + "_" + selectedPackageName },
+                        { text: "❌ Reject", callback_data: "pkrej_" + reqId + "_" + userId }
+                    ]
+                ]
+            };
+
+            fetch("https://api.telegram.org/bot" + BOT_TOKEN + "/sendMessage", { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ 
+                    chat_id: ADMIN_CHAT_ID, 
+                    text: adminMsg, 
+                    parse_mode: 'Markdown', 
+                    reply_markup: keyboard 
+                }) 
+            });
+
+            closePayModal();
+            showDarkAlert('সফল', 'আপনার প্যাকেজ পেমেন্ট রিকোয়েস্ট জমা হয়েছে। অ্যাডমিন যাচাই করে এপ্রুভ করবেন।');
+            fetchWithdrawals();
+        }
+
+        async function initUser() { 
+            if (!supabase && window.supabase && window.supabase.createClient) { 
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); 
+            } 
+            if (!supabase) { 
+                updateUI(); 
+                return; 
+            } 
+            try { 
+                var res = await supabase.from('users').select('*').eq('user_id', userId).limit(1); 
+                var user = res.data; 
+                if (!user || user.length === 0) { 
+                    var referrerId = (startParam && startParam != userId) ? parseInt(startParam) : null; 
+                    var newRes = await supabase.from('users').insert([{ 
+                        user_id: userId, 
+                        full_name: fullName, 
+                        points: 0, 
+                        ref_count: 0, 
+                        referred_by: referrerId, 
+                        claimed_tasks: [],
+                        role: 'Normal User' 
+                    }]).select(); 
+                    if (newRes.data && newRes.data.length > 0) { 
+                        userData = newRes.data[0]; 
+                    } 
+                    if (referrerId) { 
+                        var refRes = await supabase.from('users').select('*').eq('user_id', referrerId).limit(1); 
+                        if (refRes.data && refRes.data.length > 0) { 
+                            var oldUser = refRes.data[0]; 
+                            await supabase.from('users').update({ 
+                                points: (oldUser.points || 0) + 20, 
+                                ref_count: (oldUser.ref_count || 0) + 1 
+                            }).eq('user_id', referrerId); 
+                        } 
+                    } 
+                } else { 
+                    userData = user[0]; 
+                } 
+                if (userData.is_banned) { 
+                    document.body.innerHTML = "<h2 style='text-align:center;margin-top:100px;color:#ef4444'>You are Banned from using this App!</h2>"; 
+                    return; 
+                } 
+                userData.claimedTasks = userData.claimed_tasks || userData.claimedTasks || []; 
+                updateUI(); 
+                renderTasksUI(); 
+                fetchWithdrawals(); 
+            } catch (e) { 
+                console.log("Database error:", e); 
+                updateUI(); 
+            } 
+        } 
+
+        function renderTasksUI() { 
+            var claimed = userData.claimedTasks || userData.claimed_tasks || []; 
+            for (var i = 0; i < 2; i++) { 
+                var btn = document.getElementById('taskBtn_' + i); 
+                if (btn) { 
+                    if (claimed.includes(i)) { 
+                        btn.innerText = 'Claimed'; 
+                        btn.disabled = true; 
+                    } 
+                } 
+            } 
+        } 
+
+        function addActivity(title, points) { 
+            recentActivities.unshift({ 
+                title: title, 
+                points: points, 
+                time: new Date().toLocaleTimeString() 
+            }); 
+            renderActivities(); 
+        } 
+
+        function renderActivities() { 
+            var historyDiv = document.getElementById('history'); 
+            if (recentActivities.length === 0) { 
+                historyDiv.innerHTML = 'কোনো হিস্ট্রি নেই'; 
+                return; 
+            } 
+            var html = ''; 
+            recentActivities.slice(0, 5).forEach(function(act) { 
+                html += '<div class="history-item"><div><b>' + act.title + '</b><br/><small style="opacity:.6">' + act.time + '</small></div><span style="color:#22c55e;font-weight:bold">+' + act.points + ' BDT</span></div>'; 
+            }); 
+            historyDiv.innerHTML = html; 
+        } 
+
+        function updateUI() { 
+            document.getElementById('points').innerText = userData.points || 0; 
+            document.getElementById('headerBalance').innerText = userData.points || 0; 
+            document.getElementById('refCount').innerText = userData.ref_count || 0; 
+            document.getElementById('adsWatched').innerText = userData.adsWatched || 0; 
+            document.getElementById('todayEarn').innerText = userData.todayEarn || 0; 
+            document.getElementById('userRoleBadge').innerText = userData.role || 'Normal User'; 
+        } 
+
+        function switchPage(pageId, element) { 
+            var pages = document.querySelectorAll('.page'); 
+            for(var i=0; i<pages.length; i++) pages[i].classList.remove('active'); 
+            var navs = document.querySelectorAll('.nav-item'); 
+            for(var j=0; j<navs.length; j++) navs[j].classList.remove('active'); 
+            document.getElementById(pageId).classList.add('active'); 
+            if(element) element.classList.add('active'); 
+        } 
+
+        function copyRefer() { 
+            if (navigator.clipboard) { 
+                navigator.clipboard.writeText(referLink).then(function() { 
+                    showToast('রেফারেল লিংক কপি হয়েছে!'); 
+                }).catch(function() { fallbackCopy(); }); 
+            } else { fallbackCopy(); } 
+        } 
+        function fallbackCopy() { 
+            var input = document.getElementById('referLink'); 
+            input.select(); 
+            document.execCommand('copy'); 
+            showToast('রেফারেল লিংক কপি হয়েছে!'); 
+        } 
+
+        function shareRefer() { 
+            var shareText = 'MintFlow থেকে প্রতিদিন রিওয়ার্ড ইনকাম করুন! আমার লিংকে জয়েন করুন: ' + referLink; 
+            var url = 'https://t.me/share/url?url=' + encodeURIComponent(referLink) + '&text=' + encodeURIComponent(shareText); 
+            if (tg && tg.openTelegramLink) tg.openTelegramLink(url); 
+            else window.open(url, '_blank'); 
+        } 
+
+        function doTask(url, points, taskIndex, taskName) { 
+            var claimed = userData.claimedTasks || userData.claimed_tasks || []; 
+            if (claimed.includes(taskIndex)) { 
+                showToast('টাস্কটি ইতিমধ্যে সম্পন্ন করা হয়েছে!'); 
+                return; 
+            } 
+            if (tg && tg.openLink) tg.openLink(url); 
+            else window.open(url, '_blank'); 
+            
+            setTimeout(async function() { 
+                if (!userData.claimedTasks) userData.claimedTasks = []; 
+                userData.claimedTasks.push(taskIndex); 
+                userData.points = (userData.points || 0) + points; 
+                userData.todayEarn = (userData.todayEarn || 0) + points; 
+                if(supabase) { 
+                    await supabase.from('users').update({ 
+                        points: userData.points, 
+                        claimed_tasks: userData.claimedTasks 
+                    }).eq('user_id', userId); 
+                } 
+                showToast('অভিনন্দন! ' + taskName + ' জয়েন করার জন্য ' + points + ' BDT পেয়েছেন।'); 
+                addActivity('Completed Task: ' + taskName, points); 
+                renderTasksUI(); 
+                updateUI(); 
+            }, 3000); 
+        } 
+
+        var currentAdProvider = 'adsgram'; 
+        function watchAd() { 
+            var adStatus = document.getElementById('adStatus'); 
+            if (currentAdProvider === 'adsgram') { 
+                adStatus.innerText = 'Adsgram অ্যাড লোড হচ্ছে...'; 
+                if (window.Adsgram) { 
+                    try { 
+                        var AdController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID, debug: false }); 
+                        AdController.show().then(function() { 
+                            onAdSuccess('Adsgram'); 
+                        }).catch(function() { 
+                            watchMonetagFallback(); 
+                        }); 
+                    } catch (e) { watchMonetagFallback(); } 
+                } else { watchMonetagFallback(); } 
+            } else { watchMonetagFallback(); } 
+        } 
+
+        function watchMonetagFallback() { 
+            var adStatus = document.getElementById('adStatus'); 
+            adStatus.innerText = 'Monetag অ্যাড লোড হচ্ছে...'; 
+            if (typeof show_11722515 === 'function') { 
+                show_11722515().then(function() { 
+                    onAdSuccess('Monetag'); 
+                }).catch(function() { 
+                    adStatus.innerText = 'এই মুহূর্তে কোনো অ্যাড উপলব্ধ নেই। পরে আবার চেষ্টা করুন।'; 
+                    currentAdProvider = 'adsgram'; 
+                }); 
+            } else { 
+                adStatus.innerText = 'অ্যাড নেটওয়ার্ক প্রস্তুত হচ্ছে... কিছুক্ষণ পর চেষ্টা করুন।'; 
+                currentAdProvider = 'adsgram'; 
+            } 
+        } 
+
+        async function onAdSuccess(providerName) { 
+            var adStatus = document.getElementById('adStatus'); 
+            userData.points = (userData.points || 0) + 1; 
+            userData.todayEarn = (userData.todayEarn || 0) + 1; 
+            userData.adsWatched = (userData.adsWatched || 0) + 1; 
+            if(supabase) await supabase.from('users').update({ points: userData.points }).eq('user_id', userId); 
+            adStatus.innerText = 'অ্যাড সফল! +১ BDT যোগ হয়েছে।'; 
+            showToast('অভিনন্দন! ১ BDT সফলভাবে অর্জিত হয়েছে।'); 
+            addActivity('Watched Ad (' + providerName + ')', 1); 
+            currentAdProvider = (providerName === 'Adsgram') ? 'monetag' : 'adsgram'; 
+            updateUI(); 
+        } 
+
+        function showToast(text) { 
+            var toast = document.getElementById('toast'); 
+            toast.innerText = text; 
+            toast.className = 'show'; 
+            setTimeout(function() { toast.className = toast.className.replace('show', ''); }, 3500); 
+        } 
+
+        function onCountryChange() {
+            var country = document.getElementById('countrySelect').value;
+            var prefix = document.getElementById('countryCodePrefix');
+            var methodSelect = document.getElementById('method');
+            if (country === 'BD') {
+                prefix.innerText = '+880';
+                methodSelect.innerHTML = '<option value="Bkash">বিকাশ (Bkash)</option><option value="Nagad">নগদ (Nagad)</option>';
+            } else if (country === 'IN') {
+                prefix.innerText = '+91';
+                methodSelect.innerHTML = '<option value="Paytm">পেটিএম (Paytm)</option><option value="UPI">ইউপিআই (UPI)</option>';
+            } else if (country === 'PK') {
+                prefix.innerText = '+92';
+                methodSelect.innerHTML = '<option value="Easypaisa">ইজিয়পেইসা (Easypaisa)</option><option value="JazzCash">জাজক্যাশ (JazzCash)</option>';
+            }
+        }
+
+        async function doWithdraw() { 
+            var method = document.getElementById('method').value; 
+            var acc = document.getElementById('acc').value.trim(); 
+            var amount = parseInt(document.getElementById('amount').value); 
+            var prefix = document.getElementById('countryCodePrefix').innerText;
+
+            if (!acc || acc.length !== 10) return showDarkAlert('সতর্কতা', 'দয়া করে সঠিক ১০ ডিজিটের মোবাইল নম্বর দিন!'); 
+            if (isNaN(amount) || amount < 50) return showDarkAlert('সতর্কতা', 'সর্বনিম্ন উইথড্র পরিমাণ ৫০ BDT!'); 
+            if (amount > userData.points) return showDarkAlert('সতর্কতা', 'আপনার অ্যাকাউন্টে পর্যাপ্ত ব্যালেন্স নেই!'); 
+            
+            userData.points -= amount; 
+            updateUI(); 
+            if(supabase) await supabase.from('users').update({ points: userData.points }).eq('user_id', userId); 
+            
+            var reqId = 'WD' + Date.now(); 
+            var fullAccNumber = prefix + acc;
+
+            if(supabase) { 
+                await supabase.from('withdrawals').insert([{ 
+                    id: reqId, 
+                    user_id: userId, 
+                    method: method, 
+                    account: fullAccNumber, 
+                    amount: amount, 
+                    status: 'Pending' 
+                }]); 
+            } 
+
+            var adminMsg = "🚨 *নতুন উইথড্র রিকোয়েস্ট*\n\n🆔 *Req ID:* `" + reqId + "`\n👤 *User:* " + fullName + "\n🆔 *User ID:* `" + userId + "`\n💳 *Method:* " + method + "\n📱 *Account:* `" + fullAccNumber + "`\n💵 *Amount:* " + amount + " BDT\n📌 *Status:* Pending"; 
+            
+            var keyboard = { 
+                inline_keyboard: [ 
+                    [ 
+                        { text: "✅ Approve", callback_data: "app_" + reqId + "_" + userId + "_" + amount }, 
+                        { text: "❌ Reject", callback_data: "rej_" + reqId + "_" + userId + "_" + amount } 
+                    ], 
+                    [ 
+                        { text: "🚫 Ban User", callback_data: "ban_" + userId } 
+                    ] 
+                ] 
+            }; 
+
+            fetch("https://api.telegram.org/bot" + BOT_TOKEN + "/sendMessage", { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ 
+                    chat_id: ADMIN_CHAT_ID, 
+                    text: adminMsg, 
+                    parse_mode: 'Markdown', 
+                    reply_markup: keyboard 
+                }) 
+            }); 
+
+            showDarkAlert('সফল', 'উইথড্র রিকোয়েস্ট সফলভাবে জমা হয়েছে। অ্যাডমিন যাচাই করে পেমেন্ট পাঠিয়ে দেবেন।'); 
+            document.getElementById('acc').value = ''; 
+            document.getElementById('amount').value = ''; 
+            fetchWithdrawals(); 
+        } 
+
+        async function fetchWithdrawals() { 
+            if(!supabase) return; 
+            try { 
+                var res = await supabase.from('withdrawals').select('*').eq('user_id', userId); 
+                var wds = res.data; 
+                var wdHistory = document.getElementById('wdHistory'); 
+                if (!wds || wds.length === 0) { 
+                    wdHistory.innerHTML = 'কোনো হিস্ট্রি নেই'; 
+                    return; 
+                } 
+                wdHistory.innerHTML = ''; 
+                wds.reverse().forEach(function(item) { 
+                    var statusClass = 'status-pending'; 
+                    if(item.status === 'Approved') statusClass = 'status-completed'; 
+                    if(item.status === 'Rejected') statusClass = 'status-rejected'; 
+                    wdHistory.innerHTML += '<div class="history-item"><div><b>' + item.method + ' (' + item.account + ')</b><br/><small style="opacity:.6">-' + item.amount + ' BDT</small></div><span class="status-badge ' + statusClass + '">' + (item.status || 'Pending') + '</span></div>'; 
+                }); 
+            } catch(e) { 
+                console.log("Error fetching withdrawals:", e); 
+            } 
+        } 
+
+        function toggleLanguageSettings() {
+            showDarkAlert('ভাষা সেটিংস', 'বাংলা ভাষা ডিফল্টভাবে সিলেক্ট করা আছে। খুব শীঘ্রই মাল্টি-ল্যাঙ্গুয়েজ আপডেট আসছে!');
+        }
+
+        window.onload = function() { 
+            initUser(); 
+        }; 
+    </script> 
+</body> 
 </html>
